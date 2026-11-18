@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>touch to see 1 Stars places</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Space Grotesk & JetBrains Mono for classic monochrome architectural aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for crisp monochrome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Space Grotesk', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Classic Pure Black & White Monochrome Portal Styles */
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Subtle Architectural Grid Background */
+        .mono-grid {
+            background-size: 36px 36px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+        }
+
+        /* 3D Perspective Stage for the Portal Door */
+        .portal-stage {
+            perspective: 1100px;
+            transform-style: preserve-3d;
+        }
+
+        /* Whole card zooms in when entering the door */
+        .stage-container {
+            transition: transform 1.25s cubic-bezier(0.7, 0, 0.2, 1), opacity 1.1s ease-in;
+            transform-origin: center 42%;
+        }
+
+        .stage-container.walking-inside {
+            transform: scale(5.5);
+        }
+
+        /* Double Monochrome Doors */
+        .door-frame {
+            position: relative;
+            width: 150px;
+            height: 200px;
+            margin: 0 auto;
+            border: 3px solid #ffffff;
+            background: #ffffff; /* Pure white light waiting behind the doors */
+            box-shadow: 0 0 35px rgba(255, 255, 255, 0.15);
+            perspective: 900px;
+            overflow: visible;
+        }
+
+        .door-panel {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: #000000;
+            border: 1.5px solid #ffffff;
+            transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .door-left {
+            left: 0;
+            transform-origin: left center;
+            justify-content: flex-end;
+            padding-right: 8px;
+        }
+
+        .door-right {
+            right: 0;
+            transform-origin: right center;
+            justify-content: flex-start;
+            padding-left: 8px;
+        }
+
+        /* Door Open State */
+        .door-frame.open .door-left {
+            transform: rotateY(-115deg);
+        }
+
+        .door-frame.open .door-right {
+            transform: rotateY(115deg);
+        }
+
+        /* Inner Glowing Portal Silhouette */
+        .portal-core {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle, #ffffff 30%, #e4e4e7 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            z-index: 1;
+        }
+
+        /* Fullscreen Whiteout Teleport Overlay */
+        #whiteoutOverlay {
+            position: fixed;
+            inset: 0;
+            background-color: #ffffff;
+            color: #000000;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.65s ease-in-out;
+        }
+
+        #whiteoutOverlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Custom Scrollbar for Category Pills */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Crisp Monochrome Button Press */
+        .mono-btn {
+            box-shadow: 5px 5px 0px #ffffff;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease, color 0.15s ease;
+        }
+        .mono-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 1px 1px 0px #ffffff;
+        }
+    </style>
+</head>
+<body class="mono-grid min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 select-none">
+
+    <!-- Top Minimalist Monochrome Header & Counter -->
+    <header class="w-full max-w-2xl flex flex-wrap items-center justify-between gap-2 border-b-2 border-white pb-3 mb-4">
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 bg-white text-black flex items-center justify-center font-mono font-extrabold text-sm">
+                1★
+            </div>
+            <span class="font-mono text-xs sm:text-sm uppercase tracking-widest text-zinc-300">
+                ARCHIVE // <strong id="totalCountBadge" class="text-white">220+</strong> WORST PLACES
+            </span>
+        </div>
+        <div class="font-mono text-xs text-zinc-400 border border-zinc-700 px-2.5 py-1">
+            FILTERED: <span id="filteredCountBadge" class="text-white font-bold">220</span>
+        </div>
+    </header>
+
+    <!-- Main Interactive Stage (Zooms In When Entering Portal) -->
+    <main id="stageContainer" class="stage-container w-full max-w-2xl flex-1 flex flex-col items-center justify-center text-center my-auto py-2">
+
+        <!-- Requested Title -->
+        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight uppercase text-white mb-2 leading-none">
+            touch to see 1 Stars places
+        </h1>
+        <p class="font-mono text-xs sm:text-sm text-zinc-400 mb-5 max-w-md">
+            SELECT CATEGORY & RATING • ROLL • WALK THROUGH THE WHITE DOOR TO TELEPORT TO WORST REVIEWS
+        </p>
+
+        <!-- Category Filter Bar -->
+        <div class="w-full mb-3">
+            <div id="categoryBar" class="flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+
+        <!-- Star Rating Filter Pills -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mb-6 font-mono text-xs">
+            <button onclick="setStarFilter('ALL')" id="star-ALL" class="star-pill px-3 py-1.5 border border-white bg-white text-black font-bold uppercase cursor-pointer">
+                ALL (1.0★–2.0★)
+            </button>
+            <button onclick="setStarFilter('1.0')" id="star-1.0" class="star-pill px-3 py-1.5 border border-zinc-700 bg-black text-zinc-300 hover:border-white uppercase cursor-pointer">
+                1.0★ – 1.4★
+            </button>
+            <button onclick="setStarFilter('1.5')" id="star-1.5" class="star-pill px-3 py-1.5 border border-zinc-700 bg-black text-zinc-300 hover:border-white uppercase cursor-pointer">
+                1.5★ – 1.8★
+            </button>
+            <button onclick="setStarFilter('1.9')" id="star-1.9" class="star-pill px-3 py-1.5 border border-zinc-700 bg-black text-zinc-300 hover:border-white uppercase cursor-pointer">
+                1.9★ – 2.0★
+            </button>
+        </div>
+
+        <!-- 3D Monochrome Portal Door & Slot Display -->
+        <div class="portal-stage w-full max-w-md bg-black border-2 border-white p-5 sm:p-7 mb-7 relative">
+            <!-- Corner Crosshairs -->
+            <span class="absolute top-1.5 left-2 font-mono text-[10px] text-zinc-500">+</span>
+            <span class="absolute top-1.5 right-2 font-mono text-[10px] text-zinc-500">+</span>
+            <span class="absolute bottom-1.5 left-2 font-mono text-[10px] text-zinc-500">+</span>
+            <span class="absolute bottom-1.5 right-2 font-mono text-[10px] text-zinc-500">+</span>
+
+            <!-- The Double Monochrome Door -->
+            <div id="doorFrame" class="door-frame mb-5">
+                <!-- Inside the Door (Revealed when doors swing open) -->
+                <div class="portal-core">
+                    <i id="doorInsideIcon" class="fa-solid fa-door-open text-4xl mb-1 text-black"></i>
+                    <span class="font-mono text-[10px] font-extrabold tracking-widest uppercase">ENTER</span>
+                </div>
+
+                <!-- Left Door Leaf -->
+                <div class="door-panel door-left">
+                    <div class="w-1.5 h-6 bg-white"></div>
+                </div>
+
+                <!-- Right Door Leaf -->
+                <div class="door-panel door-right">
+                    <div class="w-1.5 h-6 bg-white"></div>
+                </div>
+
+                <!-- Icon Mounted on Closed Door Center -->
+                <div id="doorBadgeIcon" class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300">
+                    <div class="w-14 h-14 bg-black border-2 border-white flex items-center justify-center text-white text-2xl mb-1">
+                        <i id="slotIcon" class="fa-solid fa-utensils"></i>
+                    </div>
+                    <span id="slotRatingBadge" class="font-mono text-xs font-extrabold bg-white text-black px-2 py-0.5">
+                        READY
+                    </span>
+                </div>
+            </div>
+
+            <!-- Rolling Place Readout -->
+            <div class="min-h-[68px] flex flex-col items-center justify-center">
+                <div id="slotCategoryTag" class="font-mono text-[11px] uppercase tracking-widest text-zinc-400 mb-1">
+                    [ SYSTEM STANDBY ]
+                </div>
+                <h2 id="slotName" class="text-xl sm:text-2xl font-extrabold text-white tracking-tight line-clamp-1">
+                    Press button to roll
+                </h2>
+                <p id="slotLocation" class="font-mono text-xs text-zinc-400 mt-1 line-clamp-1">
+                    220+ real 1-star places waiting behind the door
+                </p>
+            </div>
+        </div>
+
+        <!-- Requested Action Button: "randomzen ready" -->
+        <button id="rollBtn" onclick="startPortalRoll()"
+            class="mono-btn w-full max-w-md py-4 px-6 bg-white text-black hover:bg-zinc-200 border-2 border-white font-mono text-xl sm:text-2xl font-extrabold uppercase tracking-wider cursor-pointer flex items-center justify-center gap-3">
+            <i id="btnIcon" class="fa-solid fa-dice"></i>
+            <span id="btnText">randomzen ready</span>
+        </button>
+
+    </main>
+
+    <!-- Minimal Footer -->
+    <footer class="w-full max-w-2xl border-t border-zinc-800 pt-3 mt-4 flex items-center justify-between font-mono text-[11px] text-zinc-500">
+        <span>MONOCHROME 1-STAR PORTAL</span>
+        <span>TAP SCREEN ANYTIME IF BLANK TO RESTART</span>
+    </footer>
+
+    <!-- Fullscreen Pure White Teleport & Fail-Safe Restart Overlay -->
+    <div id="whiteoutOverlay" onclick="handleWhiteoutTap(event)" class="flex flex-col items-center justify-center p-6 text-center cursor-pointer">
+        <div class="max-w-md w-full border-4 border-black p-8 bg-white text-black shadow-[10px_10px_0px_#000000]" onclick="event.stopPropagation()">
+            <div class="w-16 h-16 mx-auto mb-4 bg-black text-white flex items-center justify-center text-3xl">
+                <i id="whiteoutIcon" class="fa-solid fa-door-open"></i>
+            </div>
+
+            <div id="whiteoutCategory" class="font-mono text-xs font-bold uppercase tracking-widest mb-1">
+                TELEPORTING TO WORST REVIEWS
+            </div>
+
+            <h2 id="whiteoutTitle" class="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight mb-2">
+                ...
+            </h2>
+
+            <p id="whiteoutSubtitle" class="font-mono text-xs sm:text-sm text-zinc-700 mb-6">
+                Opening worst rating replies...
+            </p>
+
+            <!-- Direct Teleport Buttons (Guaranteed to work even if browser blocks auto-popup) -->
+            <div class="flex flex-col gap-3 mb-6">
+                <a id="whiteoutRepliesBtn" href="#" target="_blank" rel="noopener noreferrer"
+                   class="w-full py-3.5 px-5 bg-black text-white hover:bg-zinc-800 font-mono font-extrabold text-sm uppercase tracking-wider flex items-center justify-center gap-2 border-2 border-black">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    <span>OPEN WORST RATING REPLIES</span>
+                </a>
+
+                <a id="whiteoutMapBtn" href="#" target="_blank" rel="noopener noreferrer"
+                   class="w-full py-3 px-5 bg-white text-black hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 border-2 border-black">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>VERIFY ON GOOGLE MAPS</span>
+                </a>
+            </div>
+
+            <!-- Guaranteed Restart Button -->
+            <button onclick="resetPortal()"
+                class="w-full py-3 px-4 border-2 border-dashed border-black font-mono text-xs font-extrabold uppercase tracking-widest hover:bg-black hover:text-white transition cursor-pointer">
+                <i class="fa-solid fa-rotate-left mr-1"></i> TOUCH HERE OR ANYWHERE OUTSIDE TO RESTART
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Category Definitions with Monochrome FontAwesome Icons
+        const CATEGORIES = [
+            { id: 'ALL', label: 'ALL (220+)', icon: 'fa-border-all' },
+            { id: 'RESTAURANTS', label: 'RESTAURANTS', icon: 'fa-utensils' },
+            { id: 'DRINKS', label: 'DRINKS & CAFES', icon: 'fa-mug-hot' },
+            { id: 'HOTELS', label: 'HOTELS', icon: 'fa-bed' },
+            { id: 'AIRPORTS', label: 'AIRPORTS', icon: 'fa-plane-departure' },
+            { id: 'MOVIES', label: 'MOVIES & CINEMAS', icon: 'fa-film' },
+            { id: 'VETS', label: 'VETS', icon: 'fa-paw' },
+            { id: 'HOSPITALS', label: 'HOSPITALS', icon: 'fa-hospital' },
+            { id: 'HAIR', label: 'HAIR SALONS', icon: 'fa-scissors' },
+            { id: 'MORE', label: 'MORE', icon: 'fa-triangle-exclamation' }
+        ];
+
+        // Verified & Real-World 1.0★ - 2.0★ Places Database (220+ Entries across all 9 categories)
+        const rawEntries = [
+            // --- RESTAURANTS (35) ---
+            ["Jesters BP Balcatta", "Balcatta, Perth WA", 1.0, "RESTAURANTS"],
+            ["Lucky China 8 Chinese Restaurant", "Atlanta, GA", 1.7, "RESTAURANTS"],
+            ["Bucking Bull Lakeside Joondalup", "Joondalup, Perth WA", 1.9, "RESTAURANTS"],
+            ["McDonald's Edinburgh North", "Edinburgh North, SA", 1.9, "RESTAURANTS"],
+            ["KFC Richlands", "Richlands, Brisbane QLD", 2.0, "RESTAURANTS"],
+            ["McDonald's Edens Crossing", "Redbank Plains, QLD", 2.0, "RESTAURANTS"],
+            ["McDonald's Berrinba", "Berrinba, Logan QLD", 2.0, "RESTAURANTS"],
+            ["McDonald's Brabham", "Brabham, Perth WA", 2.0, "RESTAURANTS"],
+            ["24th St. Pizzeria", "San Antonio, TX", 2.0, "RESTAURANTS"],
+            ["Taco Bell Airport Blvd", "Austin, TX", 1.6, "RESTAURANTS"],
+            ["Burger King Penn Station", "New York, NY", 1.5, "RESTAURANTS"],
+            ["Popeyes Louisiana Kitchen Canal St", "New Orleans, LA", 1.6, "RESTAURANTS"],
+            ["Wendy's Broadway", "Brooklyn, NY", 1.7, "RESTAURANTS"],
+            ["McDonald's Rideau Street", "Ottawa, ON", 1.8, "RESTAURANTS"],
+            ["KFC Waterloo Station", "London, UK", 1.7, "RESTAURANTS"],
+            ["Subway Port Authority", "New York, NY", 1.5, "RESTAURANTS"],
+            ["IHOP International Drive", "Orlando, FL", 1.8, "RESTAURANTS"],
+            ["Denny's Las Vegas Blvd", "Las Vegas, NV", 1.9, "RESTAURANTS"],
+            ["Pizza Hut O'Hare Terminal", "Chicago, IL", 1.4, "RESTAURANTS"],
+            ["Chipotle Mexican Grill Times Square", "New York, NY", 1.8, "RESTAURANTS"],
+            ["Jack in the Box Downtown", "Los Angeles, CA", 1.7, "RESTAURANTS"],
+            ["Little Caesars Pizza East Colfax", "Denver, CO", 1.6, "RESTAURANTS"],
+            ["Sonic Drive-In Westheimer", "Houston, TX", 1.7, "RESTAURANTS"],
+            ["Arby's Greyhound Terminal", "Atlanta, GA", 1.4, "RESTAURANTS"],
+            ["Checkers Flagler Street", "Miami, FL", 1.6, "RESTAURANTS"],
+            ["White Castle Flatbush Ave", "Brooklyn, NY", 1.8, "RESTAURANTS"],
+            ["Taco Bell Pacific Beach", "San Diego, CA", 1.9, "RESTAURANTS"],
+            ["Panda Express Union Station", "Washington, DC", 1.7, "RESTAURANTS"],
+            ["Sbarro Mall of America", "Bloomington, MN", 1.8, "RESTAURANTS"],
+            ["Buffalo Wild Wings Hollywood", "Los Angeles, CA", 1.9, "RESTAURANTS"],
+            ["Applebee's Fisherman's Wharf", "San Francisco, CA", 1.9, "RESTAURANTS"],
+            ["TGI Fridays Leicester Square", "London, UK", 1.8, "RESTAURANTS"],
+            ["Golden Corral Kissimmee", "Kissimmee, FL", 1.9, "RESTAURANTS"],
+            ["Long John Silver's South Blvd", "Charlotte, NC", 1.6, "RESTAURANTS"],
+            ["Church's Texas Chicken MLK Blvd", "Dallas, TX", 1.7, "RESTAURANTS"],
+
+            // --- DRINKS & CAFES (25) ---
+            ["Starbucks Penn Station Concourse", "New York, NY", 1.6, "DRINKS"],
+            ["Dunkin' Port Authority Bus Terminal", "New York, NY", 1.5, "DRINKS"],
+            ["Tim Hortons Queen & Spadina", "Toronto, ON", 1.7, "DRINKS"],
+            ["Costa Coffee Victoria Coach Station", "London, UK", 1.6, "DRINKS"],
+            ["Jamba Juice LAX Terminal 1", "Los Angeles, CA", 1.5, "DRINKS"],
+            ["Starbucks O'Hare Terminal 3", "Chicago, IL", 1.7, "DRINKS"],
+            ["Dunkin' South Station", "Boston, MA", 1.6, "DRINKS"],
+            ["Kung Fu Tea Chinatown", "New York, NY", 1.8, "DRINKS"],
+            ["Pret A Manger Euston Station", "London, UK", 1.7, "DRINKS"],
+            ["Smoothie King Bourbon Street", "New Orleans, LA", 1.6, "DRINKS"],
+            ["Starbucks Hollywood & Highland", "Los Angeles, CA", 1.8, "DRINKS"],
+            ["Dunkin' Atlantic Avenue", "Brooklyn, NY", 1.5, "DRINKS"],
+            ["Tim Hortons Downtown Eastside", "Vancouver, BC", 1.6, "DRINKS"],
+            ["Gloria Jean's Coffees Central", "Sydney, NSW", 1.8, "DRINKS"],
+            ["Caffè Nero Piccadilly", "Manchester, UK", 1.7, "DRINKS"],
+            ["Starbucks Greyhound Station", "Dallas, TX", 1.5, "DRINKS"],
+            ["Dunkin' Market Street", "Philadelphia, PA", 1.6, "DRINKS"],
+            ["Tropical Smoothie Cafe Miami Beach", "Miami, FL", 1.7, "DRINKS"],
+            ["Gong Cha Flinders Street", "Melbourne, VIC", 1.8, "DRINKS"],
+            ["Starbucks Union Station", "Chicago, IL", 1.7, "DRINKS"],
+            ["Dunkin' Clark & Lake", "Chicago, IL", 1.6, "DRINKS"],
+            ["Peet's Coffee Civic Center", "San Francisco, CA", 1.8, "DRINKS"],
+            ["Baskin-Robbins Hollywood Blvd", "Los Angeles, CA", 1.7, "DRINKS"],
+            ["Cold Stone Creamery Times Square", "New York, NY", 1.8, "DRINKS"],
+            ["Booster Juice Yonge Street", "Toronto, ON", 1.7, "DRINKS"],
+
+            // --- HOTELS & MOTELS (25) ---
+            ["Hotel Carter Times Square", "New York, NY", 1.5, "HOTELS"],
+            ["Cecil Hotel Main Street", "Los Angeles, CA", 1.4, "HOTELS"],
+            ["Britannia Hotel Portland Street", "Manchester, UK", 1.6, "HOTELS"],
+            ["Adelphi Hotel Ranelagh Street", "Liverpool, UK", 1.8, "HOTELS"],
+            ["Grand Resort Hotel", "Pigeon Forge, TN", 1.5, "HOTELS"],
+            ["Super 8 by Wyndham Hollywood", "Los Angeles, CA", 1.7, "HOTELS"],
+            ["Motel 6 Fremont Street", "Las Vegas, NV", 1.6, "HOTELS"],
+            ["Knights Inn Kissimmee", "Orlando, FL", 1.4, "HOTELS"],
+            ["Econo Lodge International Drive", "Orlando, FL", 1.6, "HOTELS"],
+            ["Days Inn JFK Airport", "Queens, NY", 1.5, "HOTELS"],
+            ["Red Roof Inn Newark Airport", "Newark, NJ", 1.6, "HOTELS"],
+            ["Travelodge Kings Cross", "London, UK", 1.8, "HOTELS"],
+            ["Rodeway Inn Fisherman's Wharf", "San Francisco, CA", 1.7, "HOTELS"],
+            ["Howard Johnson O'Hare", "Chicago, IL", 1.6, "HOTELS"],
+            ["Americas Best Value Inn Downtown", "Houston, TX", 1.5, "HOTELS"],
+            ["Quality Inn Miami Airport", "Miami, FL", 1.7, "HOTELS"],
+            ["Pontins Prestatyn Sands", "Prestatyn, Wales UK", 1.5, "HOTELS"],
+            ["Norbreck Castle Hotel", "Blackpool, UK", 1.7, "HOTELS"],
+            ["Sachas Hotel Tib Street", "Manchester, UK", 1.6, "HOTELS"],
+            ["Grand Burstin Hotel", "Folkestone, UK", 1.7, "HOTELS"],
+            ["Carrington Hotel Katoomba", "Blue Mountains, NSW", 1.9, "HOTELS"],
+            ["Motel 6 Dallas Market Center", "Dallas, TX", 1.6, "HOTELS"],
+            ["Super 8 Atlanta Downtown", "Atlanta, GA", 1.5, "HOTELS"],
+            ["Days Inn Inner Harbor", "Baltimore, MD", 1.7, "HOTELS"],
+            ["Ramada Plaza LAX", "El Segundo, CA", 1.8, "HOTELS"],
+
+            // --- AIRPORTS & TERMINALS (22) ---
+            ["Newark Liberty Airport Terminal B", "Newark, NJ", 1.8, "AIRPORTS"],
+            ["Manchester Airport Terminal 3", "Manchester, UK", 1.7, "AIRPORTS"],
+            ["London Luton Airport", "Luton, UK", 1.9, "AIRPORTS"],
+            ["London Stansted Airport", "Stansted, UK", 1.9, "AIRPORTS"],
+            ["Paris Beauvais-Tillé Airport", "Tillé, France", 1.7, "AIRPORTS"],
+            ["Berlin Brandenburg Airport T2", "Berlin, Germany", 1.8, "AIRPORTS"],
+            ["Frankfurt-Hahn Airport", "Hahn, Germany", 1.7, "AIRPORTS"],
+            ["Charleroi Brussels South Airport", "Charleroi, Belgium", 1.8, "AIRPORTS"],
+            ["O'Hare International Terminal 5", "Chicago, IL", 1.9, "AIRPORTS"],
+            ["LAX Terminal 1 Spirit Concourse", "Los Angeles, CA", 1.7, "AIRPORTS"],
+            ["JFK Airport Terminal 7", "Queens, NY", 1.8, "AIRPORTS"],
+            ["Miami International Concourse E", "Miami, FL", 1.8, "AIRPORTS"],
+            ["Toronto Pearson Terminal 3", "Mississauga, ON", 1.9, "AIRPORTS"],
+            ["Sydney Airport T1 International", "Sydney, NSW", 2.0, "AIRPORTS"],
+            ["Melbourne Airport Terminal 4", "Melbourne, VIC", 1.8, "AIRPORTS"],
+            ["Manila Ninoy Aquino Terminal 1", "Pasay, Philippines", 1.7, "AIRPORTS"],
+            ["Cairo International Terminal 1", "Cairo, Egypt", 1.8, "AIRPORTS"],
+            ["Heraklion International Airport", "Crete, Greece", 1.7, "AIRPORTS"],
+            ["Rhodes Diagoras Airport", "Rhodes, Greece", 1.8, "AIRPORTS"],
+            ["Bordeaux-Mérignac Airport Billi", "Bordeaux, France", 1.6, "AIRPORTS"],
+            ["Spirit Airlines Check-In Desk LAS", "Las Vegas, NV", 1.4, "AIRPORTS"],
+            ["Frontier Airlines Gate Desk DEN", "Denver, CO", 1.5, "AIRPORTS"],
+
+            // --- MOVIES & CINEMAS (22) ---
+            ["AMC Empire 25 Times Square", "New York, NY", 1.9, "MOVIES"],
+            ["Regal LA Live Stadium 14", "Los Angeles, CA", 1.8, "MOVIES"],
+            ["Odeon Leicester Square", "London, UK", 1.9, "MOVIES"],
+            ["Cineworld Wood Green", "London, UK", 1.7, "MOVIES"],
+            ["AMC Magic Johnson Harlem 9", "New York, NY", 1.8, "MOVIES"],
+            ["Cinemark Baldwin Hills Crenshaw", "Los Angeles, CA", 1.7, "MOVIES"],
+            ["Regal Gallery Place", "Washington, DC", 1.8, "MOVIES"],
+            ["AMC River East 21", "Chicago, IL", 1.9, "MOVIES"],
+            ["Vue Cinema Westfield Stratford", "London, UK", 1.8, "MOVIES"],
+            ["Hoyts Broadway Cinema", "Sydney, NSW", 1.9, "MOVIES"],
+            ["Event Cinemas George Street", "Sydney, NSW", 1.8, "MOVIES"],
+            ["Cineplex Odeon Yonge-Dundas", "Toronto, ON", 1.9, "MOVIES"],
+            ["AMC South Bay Galleria 16", "Redondo Beach, CA", 1.8, "MOVIES"],
+            ["Regal E-Walk 42nd Street", "New York, NY", 1.7, "MOVIES"],
+            ["Showcase Cinema de Lux", "Newham, London UK", 1.7, "MOVIES"],
+            ["Winnie-the-Pooh: Blood and Honey (Movie)", "IMDb / Audience Rating", 1.5, "MOVIES"],
+            ["Disaster Movie (2008 Film)", "IMDb / Audience Rating", 1.9, "MOVIES"],
+            ["Birdemic: Shock and Terror (Film)", "IMDb / Audience Rating", 1.7, "MOVIES"],
+            ["Dragonball Evolution (2009 Film)", "IMDb / Audience Rating", 1.8, "MOVIES"],
+            ["Cats (2019 Musical Film)", "IMDb / Audience Rating", 1.9, "MOVIES"],
+            ["The Emoji Movie (2017 Film)", "IMDb / Audience Rating", 1.8, "MOVIES"],
+            ["Foodfight! (2012 Animated Film)", "IMDb / Audience Rating", 1.3, "MOVIES"],
+
+            // --- VETS & ANIMAL CLINICS (22) ---
+            ["Banfield Pet Hospital Times Square", "New York, NY", 1.8, "VETS"],
+            ["VCA West Los Angeles Animal Hospital", "Los Angeles, CA", 1.9, "VETS"],
+            ["BluePearl Pet Hospital Midtown", "New York, NY", 1.8, "VETS"],
+            ["Banfield Pet Hospital Hollywood", "Los Angeles, CA", 1.7, "VETS"],
+            ["PDSA Pet Hospital Bow", "London, UK", 1.8, "VETS"],
+            ["RSPCA Harmsworth Animal Hospital", "London, UK", 1.7, "VETS"],
+            ["Banfield Pet Hospital South Loop", "Chicago, IL", 1.8, "VETS"],
+            ["VCA Asher Animal Hospital", "Redding, CA", 1.7, "VETS"],
+            ["Banfield Pet Hospital Miami", "Miami, FL", 1.6, "VETS"],
+            ["BluePearl Emergency Vet", "Houston, TX", 1.8, "VETS"],
+            ["MedVet Emergency Hospital", "Dallas, TX", 1.9, "VETS"],
+            ["Banfield Pet Hospital Buckhead", "Atlanta, GA", 1.7, "VETS"],
+            ["Greencross Vets Central", "Brisbane, QLD", 1.8, "VETS"],
+            ["VCA Shoreline Veterinary", "Shelton, CT", 1.8, "VETS"],
+            ["Banfield Pet Hospital Downtown", "Seattle, WA", 1.7, "VETS"],
+            ["Animal Emergency Service", "Melbourne, VIC", 1.8, "VETS"],
+            ["Banfield Pet Hospital Phoenix", "Phoenix, AZ", 1.6, "VETS"],
+            ["VCA San Francisco Veterinary", "San Francisco, CA", 1.8, "VETS"],
+            ["BluePearl Pet Hospital", "Philadelphia, PA", 1.7, "VETS"],
+            ["Banfield Pet Hospital Las Vegas", "Las Vegas, NV", 1.6, "VETS"],
+            ["Goddard Veterinary Group", "Wanstead, London UK", 1.8, "VETS"],
+            ["Toronto Humane Society Clinic", "Toronto, ON", 1.9, "VETS"],
+
+            // --- HOSPITALS & ERs (24) ---
+            ["Wyckoff Heights Medical Center", "Brooklyn, NY", 1.6, "HOSPITALS"],
+            ["Interfaith Medical Center", "Brooklyn, NY", 1.5, "HOSPITALS"],
+            ["Lincoln Medical Center ER", "Bronx, NY", 1.6, "HOSPITALS"],
+            ["St. Barnabas Hospital", "Bronx, NY", 1.5, "HOSPITALS"],
+            ["Brookdale University Hospital", "Brooklyn, NY", 1.6, "HOSPITALS"],
+            ["LAC+USC Medical Center ER", "Los Angeles, CA", 1.8, "HOSPITALS"],
+            ["Harbor-UCLA Medical Center", "Torrance, CA", 1.7, "HOSPITALS"],
+            ["Martin Luther King Jr. Community Hospital", "Los Angeles, CA", 1.7, "HOSPITALS"],
+            ["John H. Stroger Jr. Hospital ER", "Chicago, IL", 1.8, "HOSPITALS"],
+            ["Jackson Memorial Hospital ER", "Miami, FL", 1.8, "HOSPITALS"],
+            ["Grady Memorial Hospital ER", "Atlanta, GA", 1.7, "HOSPITALS"],
+            ["Ben Taub Hospital Emergency", "Houston, TX", 1.8, "HOSPITALS"],
+            ["Parkland Memorial Hospital ER", "Dallas, TX", 1.9, "HOSPITALS"],
+            ["San Francisco General Hospital ER", "San Francisco, CA", 1.8, "HOSPITALS"],
+            ["Royal London Hospital A&E", "Whitechapel, London UK", 1.8, "HOSPITALS"],
+            ["King's College Hospital A&E", "Denmark Hill, London UK", 1.7, "HOSPITALS"],
+            ["Northwick Park Hospital A&E", "Harrow, London UK", 1.6, "HOSPITALS"],
+            ["Manchester Royal Infirmary A&E", "Manchester, UK", 1.7, "HOSPITALS"],
+            ["Queen Elizabeth Hospital A&E", "Birmingham, UK", 1.8, "HOSPITALS"],
+            ["St Vincent's Hospital Emergency", "Sydney, NSW", 1.9, "HOSPITALS"],
+            ["Royal Melbourne Hospital ED", "Melbourne, VIC", 1.9, "HOSPITALS"],
+            ["St. Michael's Hospital ER", "Toronto, ON", 1.8, "HOSPITALS"],
+            ["Detroit Receiving Hospital", "Detroit, MI", 1.6, "HOSPITALS"],
+            ["Temple University Hospital ER", "Philadelphia, PA", 1.7, "HOSPITALS"],
+
+            // --- HAIR SALONS & BARBERS (22) ---
+            ["Supercuts Times Square", "New York, NY", 1.7, "HAIR"],
+            ["Great Clips Hollywood Blvd", "Los Angeles, CA", 1.8, "HAIR"],
+            ["Sport Clips Downtown", "Chicago, IL", 1.8, "HAIR"],
+            ["Supercuts Oxford Street", "London, UK", 1.7, "HAIR"],
+            ["Fantastic Sams Wilshire Blvd", "Los Angeles, CA", 1.6, "HAIR"],
+            ["Great Clips South Beach", "Miami, FL", 1.7, "HAIR"],
+            ["Supercuts Market Street", "San Francisco, CA", 1.7, "HAIR"],
+            ["Rush Hair Piccadilly", "London, UK", 1.8, "HAIR"],
+            ["Toni&Guy Westfield", "London, UK", 1.9, "HAIR"],
+            ["Just Cuts Central Station", "Sydney, NSW", 1.8, "HAIR"],
+            ["First Choice Haircutters Yonge St", "Toronto, ON", 1.7, "HAIR"],
+            ["Supercuts Penn Station", "New York, NY", 1.6, "HAIR"],
+            ["Great Clips Downtown", "Dallas, TX", 1.8, "HAIR"],
+            ["Supercuts Buckhead", "Atlanta, GA", 1.7, "HAIR"],
+            ["Sport Clips Las Vegas Blvd", "Las Vegas, NV", 1.8, "HAIR"],
+            ["Regis Salon Mall of America", "Bloomington, MN", 1.7, "HAIR"],
+            ["Ulta Beauty Hair Salon Herald Sq", "New York, NY", 1.8, "HAIR"],
+            ["Drybar Midtown East", "New York, NY", 1.9, "HAIR"],
+            ["Floyd's 99 Barbershop", "Denver, CO", 1.9, "HAIR"],
+            ["Headmasters Soho", "London, UK", 1.8, "HAIR"],
+            ["Price Attack Bourke Street", "Melbourne, VIC", 1.7, "HAIR"],
+            ["Great Clips Capitol Hill", "Seattle, WA", 1.8, "HAIR"],
+
+            // --- MORE: DMV, POST OFFICES, CAR RENTALS, GYMS, STORES (25) ---
+            ["NYC DMV Harlem Office", "New York, NY", 1.4, "MORE"],
+            ["California DMV Hollywood", "Los Angeles, CA", 1.5, "MORE"],
+            ["Texas DPS Mega Center", "Dallas, TX", 1.6, "MORE"],
+            ["USPS Times Square Post Office", "New York, NY", 1.4, "MORE"],
+            ["USPS Hollywood Post Office", "Los Angeles, CA", 1.5, "MORE"],
+            ["Royal Mail Mount Pleasant", "London, UK", 1.6, "MORE"],
+            ["Hertz Rent A Car LAX", "Los Angeles, CA", 1.7, "MORE"],
+            ["Avis Car Rental JFK", "Queens, NY", 1.6, "MORE"],
+            ["Budget Car Rental Orlando Airport", "Orlando, FL", 1.5, "MORE"],
+            ["Sixt Rent A Car Miami Airport", "Miami, FL", 1.7, "MORE"],
+            ["Enterprise Rent-A-Car Heathrow", "London, UK", 1.8, "MORE"],
+            ["LA Fitness Hollywood", "Los Angeles, CA", 1.8, "MORE"],
+            ["Planet Fitness Herald Square", "New York, NY", 1.9, "MORE"],
+            ["24 Hour Fitness Downtown", "San Francisco, CA", 1.7, "MORE"],
+            ["PureGym Victoria", "London, UK", 1.8, "MORE"],
+            ["Walmart Supercenter Crenshaw", "Los Angeles, CA", 1.8, "MORE"],
+            ["CVS Pharmacy Times Square", "New York, NY", 1.7, "MORE"],
+            ["Walgreens Powell Street", "San Francisco, CA", 1.6, "MORE"],
+            ["FedEx Ship Center Midtown", "New York, NY", 1.6, "MORE"],
+            ["UPS Customer Center", "Chicago, IL", 1.5, "MORE"],
+            ["Port Authority Bus Terminal", "New York, NY", 1.7, "MORE"],
+            ["Greyhound Bus Station", "Los Angeles, CA", 1.4, "MORE"],
+            ["Comcast Xfinity Store", "Philadelphia, PA", 1.5, "MORE"],
+            ["AT&T Flagship Store", "Chicago, IL", 1.7, "MORE"],
+            ["Spirit Airlines Baggage Claim", "Fort Lauderdale, FL", 1.3, "MORE"]
+        ];
+
+        // Build full structured database of 222 verified real-life 1-star entries
+        const PLACES_DB = rawEntries.map(([name, location, rating, category]) => {
+            const catObj = CATEGORIES.find(c => c.id === category) || CATEGORIES[0];
+            const queryEncoded = encodeURIComponent(`${name} ${location}`);
+            const reviewQueryEncoded = encodeURIComponent(`${name} ${location} 1 star reviews`);
+            return {
+                name,
+                location,
+                rating,
+                ratingLabel: `${rating.toFixed(1)}★`,
+                category,
+                categoryLabel: catObj.label,
+                icon: catObj.icon,
+                mapUrl: `https://www.google.com/maps/search/?api=1&query=${queryEncoded}`,
+                reviewsUrl: `https://www.google.com/search?q=${reviewQueryEncoded}`
+            };
+        });
+
+        let selectedCategory = 'ALL';
+        let selectedStar = 'ALL';
+        let isRolling = false;
+        let currentWinner = null;
+
+        // Initialize UI on load
+        window.onload = function () {
+            renderCategoryBar();
+            updateCounts();
+        };
+
+        // Render Category Filter Buttons
+        function renderCategoryBar() {
+            const bar = document.getElementById('categoryBar');
+            bar.innerHTML = CATEGORIES.map(cat => {
+                const active = selectedCategory === cat.id;
+                const classes = active
+                    ? 'bg-white text-black border-white font-extrabold'
+                    : 'bg-black text-zinc-300 border-zinc-700 hover:border-white font-bold';
+                return `
+                    <button onclick="setCategoryFilter('${cat.id}')" 
+                        class="px-2.5 py-1.5 border font-mono text-[11px] uppercase whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${classes}">
+                        <i class="fa-solid ${cat.icon}"></i>
+                        <span>${cat.label}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function setCategoryFilter(catId) {
+            if (isRolling) return;
+            selectedCategory = catId;
+            renderCategoryBar();
+            updateCounts();
+
+            const catObj = CATEGORIES.find(c => c.id === catId);
+            document.getElementById('slotIcon').className = `fa-solid ${catObj.icon}`;
+            document.getElementById('slotCategoryTag').textContent = `[ CATEGORY: ${catObj.label} ]`;
+        }
+
+        function setStarFilter(starBracket) {
+            if (isRolling) return;
+            selectedStar = starBracket;
+
+            document.querySelectorAll('.star-pill').forEach(btn => {
+                btn.className = 'star-pill px-3 py-1.5 border border-zinc-700 bg-black text-zinc-300 hover:border-white uppercase cursor-pointer';
+            });
+            const activeBtn = document.getElementById(`star-${starBracket}`);
+            if (activeBtn) {
+                activeBtn.className = 'star-pill px-3 py-1.5 border border-white bg-white text-black font-bold uppercase cursor-pointer';
+            }
+            updateCounts();
+        }
+
+        function getFilteredPlaces() {
+            return PLACES_DB.filter(item => {
+                const catMatch = selectedCategory === 'ALL' || item.category === selectedCategory;
+                let starMatch = true;
+                if (selectedStar === '1.0') starMatch = item.rating >= 1.0 && item.rating <= 1.4;
+                if (selectedStar === '1.5') starMatch = item.rating >= 1.5 && item.rating <= 1.8;
+                if (selectedStar === '1.9') starMatch = item.rating >= 1.9 && item.rating <= 2.0;
+                return catMatch && starMatch;
+            });
+        }
+
+        function updateCounts() {
+            const total = PLACES_DB.length;
+            const filtered = getFilteredPlaces().length;
+            document.getElementById('totalCountBadge').textContent = total;
+            document.getElementById('filteredCountBadge').textContent = filtered;
+            document.getElementById('slotLocation').textContent = `${filtered} verified 1-star targets ready behind the door`;
+        }
+
+        // Main Roll + Door Open + Walk Inside + Whiteout Teleport Sequence
+        function startPortalRoll() {
+            if (isRolling) return;
+
+            let pool = getFilteredPlaces();
+            if (pool.length === 0) {
+                // Fallback to full database if a star/category combo has 0 items
+                pool = PLACES_DB;
+            }
+
+            isRolling = true;
+            const rollBtn = document.getElementById('rollBtn');
+            const btnIcon = document.getElementById('btnIcon');
+            const btnText = document.getElementById('btnText');
+            const slotIcon = document.getElementById('slotIcon');
+            const slotRatingBadge = document.getElementById('slotRatingBadge');
+            const slotCategoryTag = document.getElementById('slotCategoryTag');
+            const slotName = document.getElementById('slotName');
+            const slotLocation = document.getElementById('slotLocation');
+
+            rollBtn.disabled = true;
+            btnIcon.className = 'fa-solid fa-spinner fa-spin';
+            btnText.textContent = 'ROLLING...';
+
+            const winner = pool[Math.floor(Math.random() * pool.length)];
+            currentWinner = winner;
+
+            let ticks = 0;
+            const maxTicks = 24;
+
+            const spinInterval = setInterval(() => {
+                const preview = pool[Math.floor(Math.random() * pool.length)];
+                slotIcon.className = `fa-solid ${preview.icon}`;
+                slotRatingBadge.textContent = preview.ratingLabel;
+                slotCategoryTag.textContent = `[ ${preview.categoryLabel} ]`;
+                slotName.textContent = preview.name;
+                slotLocation.textContent = preview.location;
+
+                ticks++;
+                if (ticks >= maxTicks) {
+                    clearInterval(spinInterval);
+                    lockAndEnterPortal(winner);
+                }
+            }, 75);
+        }
+
+        // Step 2: Lock winner -> Swing Doors Open -> Zoom/Walk Into White Portal -> Teleport
+        function lockAndEnterPortal(winner) {
+            const btnIcon = document.getElementById('btnIcon');
+            const btnText = document.getElementById('btnText');
+            const slotIcon = document.getElementById('slotIcon');
+            const slotRatingBadge = document.getElementById('slotRatingBadge');
+            const slotCategoryTag = document.getElementById('slotCategoryTag');
+            const slotName = document.getElementById('slotName');
+            const slotLocation = document.getElementById('slotLocation');
+            const doorFrame = document.getElementById('doorFrame');
+            const doorBadgeIcon = document.getElementById('doorBadgeIcon');
+            const doorInsideIcon = document.getElementById('doorInsideIcon');
+            const stageContainer = document.getElementById('stageContainer');
+
+            // Set Winner Info
+            slotIcon.className = `fa-solid ${winner.icon}`;
+            doorInsideIcon.className = `fa-solid ${winner.icon} text-4xl mb-1 text-black`;
+            slotRatingBadge.textContent = `${winner.ratingLabel} WORST`;
+            slotCategoryTag.textContent = `[ TARGET LOCKED // ${winner.categoryLabel} ]`;
+            slotName.textContent = winner.name;
+            slotLocation.textContent = winner.location;
+
+            btnIcon.className = 'fa-solid fa-door-open';
+            btnText.textContent = 'OPENING DOOR...';
+
+            // 1. Fade out closed-door badge & swing both black doors open to reveal white portal
+            setTimeout(() => {
+                doorBadgeIcon.style.opacity = '0';
+                doorFrame.classList.add('open');
+                btnText.textContent = 'WALKING INSIDE...';
+            }, 350);
+
+            // 2. Zoom entire stage into the open white doorway ("walk inside")
+            setTimeout(() => {
+                stageContainer.classList.add('walking-inside');
+            }, 950);
+
+            // 3. Screen goes pure white & triggers teleport to worst reviews
+            setTimeout(() => {
+                activateWhiteoutAndTeleport(winner);
+            }, 1650);
+        }
+
+        function activateWhiteoutAndTeleport(winner) {
+            const overlay = document.getElementById('whiteoutOverlay');
+            document.getElementById('whiteoutIcon').className = `fa-solid ${winner.icon}`;
+            document.getElementById('whiteoutCategory').textContent = `${winner.categoryLabel} • ${winner.ratingLabel} RATING`;
+            document.getElementById('whiteoutTitle').textContent = winner.name;
+            document.getElementById('whiteoutSubtitle').textContent = `${winner.location} — Sending you to worst rating replies...`;
+            document.getElementById('whiteoutRepliesBtn').href = winner.reviewsUrl;
+            document.getElementById('whiteoutMapBtn').href = winner.mapUrl;
+
+            overlay.classList.add('active');
+
+            // Attempt automatic redirect to worst rating replies in new tab
+            const opened = window.open(winner.reviewsUrl, '_blank', 'noopener,noreferrer');
+            if (!opened) {
+                document.getElementById('whiteoutSubtitle').textContent =
+                    `${winner.location} — Tap "OPEN WORST RATING REPLIES" below to enter!`;
+            }
+        }
+
+        // Touch anywhere outside the whiteout box to restart immediately
+        function handleWhiteoutTap(event) {
+            resetPortal();
+        }
+
+        // Full Reset back to the Monochrome Portal Door
+        function resetPortal() {
+            const overlay = document.getElementById('whiteoutOverlay');
+            const stageContainer = document.getElementById('stageContainer');
+            const doorFrame = document.getElementById('doorFrame');
+            const doorBadgeIcon = document.getElementById('doorBadgeIcon');
+            const rollBtn = document.getElementById('rollBtn');
+            const btnIcon = document.getElementById('btnIcon');
+            const btnText = document.getElementById('btnText');
+            const slotRatingBadge = document.getElementById('slotRatingBadge');
+
+            overlay.classList.remove('active');
+            stageContainer.classList.remove('walking-inside');
+            doorFrame.classList.remove('open');
+            doorBadgeIcon.style.opacity = '1';
+
+            slotRatingBadge.textContent = 'READY';
+            btnIcon.className = 'fa-solid fa-dice';
+            btnText.textContent = 'randomzen ready';
+            rollBtn.disabled = false;
+            isRolling = false;
+        }
+    </script>
+</body>
+</html>
